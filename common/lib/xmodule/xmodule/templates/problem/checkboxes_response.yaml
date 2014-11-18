@@ -1,0 +1,24 @@
+---
+metadata:
+    display_name: 复选框
+    markdown: |
+      复选框问题供学生选择. 学生可选择一个或者多个.
+      >>选择正确的答案<<
+
+      [x] correct
+      [ ] incorrect
+      [x] correct
+
+data: |
+      <problem>
+        <p>复选框问题供学生选择. 学生可选择一个或者多个..</p>
+        <p>选择正确的答案</p>
+        <choiceresponse>
+          <checkboxgroup direction="vertical" label="Select the answer that matches">
+            <choice correct="true">correct</choice>
+            <choice correct="false">incorrect</choice>
+            <choice correct="true">correct</choice>
+          </checkboxgroup>
+        </choiceresponse>
+      </problem>
+

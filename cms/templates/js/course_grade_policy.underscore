@@ -1,0 +1,48 @@
+<% if(model.get('type') == 'Homework'){ %>
+<% data = '家庭作业' %>
+<%  }else if (model.get('type') == 'Lab'){ %>
+<%  data = '实验' %>
+<%  console.log('LLLLL') %>
+<%  }else if(model.get('type') == 'Midterm Exam'){ %>
+<%  data = '期中测验' %>
+<%  }else if(model.get('type') == 'Final Exam'){ %>
+<%  data = '期末测验' %>
+<%  }else{ %>
+<%  data = model.get('type') %>
+<% } %>
+
+<li class="field-group course-grading-assignment-list-item">
+  <div class="field text" id="field-course-grading-assignment-name">
+  	<label for="course-grading-assignment-name">作业类型名称</label>
+  	<input type="text" class="long" id="course-grading-assignment-name" value="<%= data %>" />
+  	<span class="tip tip-stacked"><%= gettext("例如：家庭作业, 期中测试") %></span>
+  </div>
+
+  <div class="field text" id="field-course-grading-assignment-shortname">
+    <label for="course-grading-assignment-shortname">简称</label>
+    <input type="text" class="short" id="course-grading-assignment-shortname" value="<%= model.get('short_label') %>" />
+    <span class="tip tip-inline"><%= gettext("例如：家庭作业, 期中测试") %></span>
+  </div>
+
+  <div class="field text" id="field-course-grading-assignment-gradeweight">
+    <label for="course-grading-assignment-gradeweight">占总成绩百分比例</label>
+    <input type="text" class="short" id="course-grading-assignment-gradeweight" value = "<%= model.get('weight') %>" />
+    <span class="tip tip-inline">例如: 40(40%)</span>
+  </div>
+
+  <div class="field text" id="field-course-grading-assignment-totalassignments">
+    <label for="course-grading-assignment-totalassignments">题目数量</label>
+    <input type="text" class="short" id="course-grading-assignment-totalassignments" value = "<%= model.get('min_count') %>" />
+    <span class="tip tip-inline">总的练习题</span>
+  </div>
+
+  <div class="field text" id="field-course-grading-assignment-droppable">
+    <label for="course-grading-assignment-droppable">不计分数题目</label>
+    <input type="text" class="short" id="course-grading-assignment-droppable" value = "<%= model.get('drop_count') %>" />
+    <span class="tip tip-inline">不计入分数的练习题目总数</span>
+  </div>
+
+  <div class="actions">
+  	<a href="#" class="button delete-button standard remove-item remove-grading-data"><span class="delete-icon"></span><%= gettext("Delete") %></a>
+  </div>
+</li>

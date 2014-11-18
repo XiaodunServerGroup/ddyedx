@@ -1,0 +1,357 @@
+<%! from django.utils.translation import ugettext as _ %>
+<%!
+  from django.core.urlresolvers import reverse
+  from courseware.courses import course_image_url, get_course_about_section
+  from courseware.access import has_access
+  from django.conf import settings
+  from edxmako.shortcuts import marketing_link
+
+  if settings.FEATURES.get('ENABLE_SHOPPING_CART'):
+      cart_link = reverse('shoppingcart.views.show_cart')
+  else:
+      cart_link = ""
+%>
+<%namespace name='static' file='../static_content.html'/>
+<%! from microsite_configuration import microsite %>
+
+<%inherit file="../main.html" />
+
+<%block name="headextra">
+
+  <%
+    if self.theme_enabled():
+      google_analytics_file = u'../{ga}'.format(
+        ga=microsite.get_value('google_analytics_file', 'theme-google-analytics.html')
+      )
+    else:
+      google_analytics_file = '../google_analytics.html'
+  %>
+
+  <%include file="${google_analytics_file}" />
+
+  ## OG (Open Graph) title and description added below to give social media info to display
+  ## (https://developers.facebook.com/docs/opengraph/howtos/maximizing-distribution-media-content#tags)
+<meta property="og:title" content="${get_course_about_section(course, 'title')}" xmlns="http://www.w3.org/1999/html"/>
+  <!--<meta property="og:description" content="${get_course_about_section(course, 'short_description')}" />-->
+</%block>
+
+<%block name="js_extra">
+
+  <script type="text/javascript">
+  (function() {
+
+    $(".register").click(function(event) {
+      var eventRecipient = $(this);
+      var classAttrs = eventRecipient.attr('class').split(' ');
+
+      if (classAttrs.indexOf('free') > 0) {
+        $("#class_enroll_form").submit();
+        event.preventDefault();
+        return false;
+      }
+
+    });
+
+    % if settings.FEATURES.get('ENABLE_SHOPPING_CART') and settings.FEATURES.get('ENABLE_PAID_COURSE_REGISTRATION'):
+      add_course_complete_handler = function(jqXHR, textStatus) {
+        if (jqXHR.status == 200) {
+          location.href = "${cart_link}";
+        }
+        if (jqXHR.status == 400) {
+          $("#register_error")
+            .html(jqXHR.responseText ? jqXHR.responseText : "${_('An error occurred. Please try again later.')}")
+            .css("display", "block");
+        }
+        else if (jqXHR.status == 403) {
+            location.href = "${reg_then_add_to_cart_link}";
+        }
+      };
+      $("#add_to_cart_post").click(function(event){
+        $.ajax({
+          url: "${reverse('add_course_to_cart', args=[course.id])}",
+          type: "POST",
+          /* Rant: HAD TO USE COMPLETE B/C PROMISE.DONE FOR SOME REASON DOES NOT WORK ON THIS PAGE. */
+          complete: add_course_complete_handler
+        })
+        event.preventDefault();
+      });
+    % endif
+
+    ## making the conditional around this entire JS block for sanity
+    %if settings.FEATURES.get('RESTRICT_ENROLL_BY_REG_METHOD') and course.enrollment_domain:
+      <%
+        perms_error = _('The currently logged-in user account does not have permission to enroll in this course. '
+                        'You may need to {start_logout_tag}log out{end_tag} then try the register button again. '
+                        'Please visit the {start_help_tag}help page{end_tag} for a possible solution.').format(
+                          start_help_tag="<a href='{url}'>".format(url=marketing_link('FAQ')), end_tag='</a>',
+                          start_logout_tag="<a href='{url}'>".format(url=reverse('logout'))
+                          )
+      %>
+    $('#class_enroll_form').on('ajax:complete', function(event, xhr) {
+      if(xhr.status == 200) {
+        location.href = "${reverse('dashboard')}";
+      } else if (xhr.status == 403) {
+        location.href = "${reverse('course-specific-register', args=[course.id])}?course_id=${course.id}&enrollment_action=enroll";
+      } else if (xhr.status == 400) { //This means the user did not have permission
+        $('#register_error').html("${perms_error}").css("display", "block");
+      } else {
+        $('#register_error').html(
+            (xhr.responseText ? xhr.responseText : "${_("An error occurred. Please try again later.")}")
+        ).css("display", "block");
+      }
+    });
+
+    %else:
+
+    $('#class_enroll_form').on('ajax:complete', function(event, xhr) {
+      if(xhr.status == 200) {
+        if (xhr.responseText == "") {
+          location.href = "${reverse('dashboard')}";
+        }
+        else {
+          location.href = xhr.responseText;
+        }
+      } else if (xhr.status == 403) {
+        location.href = "${reverse('register_user')}?course_id=${course.id}&enrollment_action=enroll";
+      } else {
+        $('#register_error').html(
+            (xhr.responseText ? xhr.responseText : 'An error occurred. Please try again later.')
+        ).css("display", "block");
+      }
+    });
+
+    %endif
+
+  })(this)
+  </script>
+
+  <script src="${static.url('js/course_info.js')}"></script>
+  <link href="${static.url('css/vendor/course_about.css')}" rel="stylesheet" type="text/css">
+</%block>
+
+<%block name="pagetitle">${_("About {course.display_number_with_default}").format(course=course) | h}</%block>
+
+
+
+<div class="content">
+    <div class="wrapper_about">
+        <section class="container container_bg">
+        	<div class="container_pad">
+                <div class="course_left">
+                    <!--<h2><img src="${course_image_url(course)}" width="228" height="80"  alt=""/></h2>-->
+                    <h3 class="title">${get_course_about_section(course, "title")}</h3>
+                    <p>${get_course_about_section(course, "short_description")}</p>
+                </div>
+                <div class="course_right">
+                 % if get_course_about_section(course, "video"):
+                   <a href="#video-modal" class="media" rel="leanModal">
+                      <div class="hero">
+                            <img src="${course_image_url(course)}" width="425" height="241" alt="" />
+                      <div class="play-intro"></div>
+                      </div>
+                   </a>
+                 %else:
+                    <div class="media">
+                        <div class="hero">
+                            <img src="${course_image_url(course)}" width="425" height="241" alt="" />
+                        </div>
+                    </div>
+                   % endif
+                </div>
+
+            </div>
+        </section>
+        <section class="container">
+            <section class="section_left container_bg">
+            	<div class="container_pad2" style="width:780px;">
+                    <h2 class="line">课程概述</h2>
+                        <div class="inner-wrapper">
+                        ${get_course_about_section(course, "overview")}
+                        </div>
+                </div>
+            </section>
+            <section class="section_right container_bg">
+            	<div class="container_pad2">
+                    <h2>课程学期</h2>
+                    <div class="termSelect_c">
+                        <select id="j-termSelect" class="termSelect">
+                        %if course_end:
+                            <option value="18001">${course.start_date_text}-${course_end.strftime('%Y年%m月%d日')}</option>
+                        %else:
+                            <option value="18001">${course.start_date_text}-${course_end}</option>
+                        %endif
+                        </select>
+                    </div>
+                    <div class="m-btnList">
+                        <div class="main-cta">
+                        %if user.is_authenticated() and registered:
+                            %if show_courseware_link:
+                                <a href="${course_target}">
+                            %endif
+
+                                <!--<span class="register disabled">${_("You are registered for this course")}</span>-->
+
+                            %if show_courseware_link:
+                                <strong><span id="j-startLearn" class="u-btn-orange">${_("View Courseware")}</span></strong>
+                                </a>
+                            %endif
+                        %else:
+                                <a class="register free ${'auth' if user.is_authenticated else ''}"><span id="j-startLearn" class="u-btn-orange">注册课程</span></a>
+                                <div id="register_error" style='clear: both;'></div>
+                        %endif
+                        </div>
+                    </div>
+                    <div class="m-btnList">
+                        <h2>课程信息</h2>
+                        %if course_dur:
+                            <p><span>课程时长：</span><span class="cor_red">${course_dur[0] + "天"}</span></p>
+                        %else:
+                            <p><span>课程时长：</span><span class="cor_red">${course_duration}</span></p>
+                        %endif
+                        <p><span>开课时间：</span><span class="cor_red">${course.start_date_text}</span></p>
+                        <p><span>课程负载：</span><span class="cor_red">${get_course_about_section(course, "effort")}小时每周</span></p>
+                        <!--<p><span>内容类型：</span><span>视频 文档 随堂测验 富文本 讨论</span></p>-->
+                        <!--<p><span>课程分类：</span><a href="#">哲学历史</a></p>-->
+                    </div>
+                  </div>
+                    <div class="m-btnList">
+                        <h4>授课老师</h4>
+
+
+                        % for n in range(0, len(course_team)):
+                        <a class="m-btn" href="#">
+                            %if course_team[n]['pic']:
+                                <img src="${course_team[n]['pic']}" width="80" height="80"  alt=""/>
+                            %else:
+                                <img src="${static.url('images/noprofilepic.jpg')}" width="80" height="80"/>
+                            %endif
+							<div class="cnt f-fl" style="margin-left:40px">
+                        <li>
+                				<h2>${course_team[n]['name']}</h2>
+                            <span id="shou">展开&nbsp;∨</span>
+                				<div class="p1" style="display:none;">${course_team[n]['shortbio']}</div>
+
+                        </li>
+              				</div>
+                        </a>
+                        % endfor
+                        <!--<a class="m-btn" href="#">-->
+                            <!--<img src="${static.url('images/liuz.jpg')}" width="80" height="80"  alt=""/>-->
+							<!--<div class="cnt f-fl">-->
+                				<!--<h3>唐玉海</h3>-->
+                				<!--<p>教授</p>-->
+              				<!--</div>-->
+                        <!--</a>-->
+                        <!--<a class="m-btn" href="#">-->
+                            <!--<img src="${static.url('images/liuz.jpg')}" width="80" height="80"  alt=""/>-->
+							<!--<div class="cnt f-fl">-->
+                				<!--<h3>唐玉海</h3>-->
+                				<!--<p>教授</p>-->
+              				<!--</div>-->
+                        <!--</a>-->
+                        <!--<a class="m-btn" href="#">-->
+                            <!--<img src="${static.url('images/liuz.jpg')}" width="80" height="80"  alt=""/>-->
+							<!--<div class="cnt f-fl">-->
+                				<!--<h3>唐玉海</h3>-->
+                				<!--<p>教授</p>-->
+              				<!--</div>-->
+                        <!--</a>-->
+                        <!--<a class="m-btn" href="#">-->
+                            <!--<img src="${static.url('images/liuz.jpg')}" width="80" height="80"  alt=""/>-->
+							<!--<div class="cnt f-fl">-->
+                				<!--<h3>唐玉海</h3>-->
+                				<!--<p>教授</p>-->
+              				<!--</div>-->
+                        <!--</a>-->
+                    </div>
+                    <div class="m-btnList">
+                        <!-- JiaThis Button BEGIN -->
+                            <div class="jiathis_style_32x32">
+	                           <a class="jiathis_button_qzone"></a>
+	                           <a class="jiathis_button_tsina"></a>
+	                           <a class="jiathis_button_tqq"></a>
+	                           <a class="jiathis_button_weixin"></a>
+	                           <a class="jiathis_button_renren"></a>
+                            </div>
+                            <script type="text/javascript" src="http://v3.jiathis.com/code/jia.js" charset="utf-8"></script>
+                        <!-- JiaThis Button END -->
+                    </div>
+            </section>
+        </section>
+    </div>
+</div>
+<!--content end-->
+
+
+%if not registered:
+  <div style="display: none;">
+    <form id="class_enroll_form" method="post" data-remote="true" action="${reverse('change_enrollment')}">
+      <fieldset class="enroll_fieldset">
+        <input name="course_id" type="hidden" value="${course.id}">
+        <input name="enrollment_action" type="hidden" value="enroll">
+      </fieldset>
+      <div class="submit">
+        <input name="submit" type="submit" value="enroll">
+      </div>
+    </form>
+  </div>
+%endif
+
+
+<%include file="../video_modal.html" />
+
+<style type="text/css">
+
+
+    .play-intro {
+        background-image: linear-gradient(-90deg, rgba(0,0,0,0.65),rgba(0,0,0,0.75));
+        border-radius: 4px;
+
+        box-shadow: 0 1px 12px 0 rgba(0,0,0,0.5);
+        border: 2px solid rgba(255,255,255,0.8);
+        height: 80px;
+        left: 50%;
+        margin-top: -170px;
+        margin-left: -40px;
+        position: relative;
+        top: 50%;
+        width: 80px;
+    }
+
+        .play-intro::after{
+            color: rgba(255,255,255,0.8);
+            content: "\25B6";
+            display: block;
+            font: normal 2em/1em "Microsoft YaHei","Open Sans",Verdana,Geneva,sans-serif,sans-serif;
+            left: 50%;
+            margin-left: -11px;
+            margin-top: -16px;
+            position: relative;
+            text-shadow: 0 -1px rgba(0,0,0,0.8);
+            top: 50%;
+
+       }
+
+    .content .container .section_right .m-btnList{ float:left; width:100%;}
+	.content .container .section_right .m-btnList .m-btn:hover{float:left; background:#f6f6f6; color:#505050;}
+	.f-fl{ width:180px; float:left; }
+    .f-fl span{ cursor:pointer; color:#58bfff; color:#ff7f00; font-size:12px; margin-top:10px; display:block;}
+    .p1{ line-height:20px; font-size:12px;}
+
+
+</style>
+<script>
+	$(function (){
+			$("#shou").toggle(
+				function(){
+						$(this).siblings(".p1").attr("style","display:block");
+						$(this).addClass("");
+						document.getElementById("shou").innerHTML="收缩&nbsp;∧";
+					},
+				function (){
+						$(this).siblings(".p1").attr("style","display:none")
+						document.getElementById("shou").innerHTML="展开&nbsp;∨";
+					}
+			)
+	})
+</script>

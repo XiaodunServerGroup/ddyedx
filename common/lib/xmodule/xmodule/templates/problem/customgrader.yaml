@@ -1,0 +1,44 @@
+---
+metadata:
+    display_name: 自定义Python的评估输入
+    markdown: !!null
+data: |
+      <problem>
+      <p>自定义Python评估输入的问题接受来自学生的一行或多行文字输入，并评估使用嵌入的问题在一个python脚本的基础上评价是否正确输入。
+      </p>
+
+      <script type="loncapa/python">
+
+      def test_add(expect, ans):
+          try:
+              a1=int(ans[0])
+              a2=int(ans[1])
+              return (a1+a2) == int(expect)
+          except ValueError:
+              return False
+
+      def test_add_to_ten(expect, ans):
+          return test_add(10, ans)
+
+      </script>
+
+      <p>输入两个整数的总和为10： </p>
+      <customresponse cfn="test_add_to_ten">
+              <textline size="40" correct_answer="3" label="Integer #1"/><br/>
+              <textline size="40" correct_answer="7" label="Integer #2"/>
+      </customresponse>
+
+      <p>输入两个整数的总和为20：</p>
+      <customresponse cfn="test_add" expect="20">
+              <textline size="40" correct_answer="11" label="Integer #1"/><br/>
+              <textline size="40" correct_answer="9" label="Integer #2"/>
+      </customresponse>
+    
+          <solution>
+              <div class="detailed-solution">
+                  <p>Explanation</p>
+                  <p>上面的答案满足方程 \(y = 10 - x\) 和 \(y = 20 - x\) .</p>
+                  <img src="/static/images/simple_graph.png"/>
+              </div>
+          </solution>
+      </problem>

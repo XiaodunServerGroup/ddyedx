@@ -1,0 +1,440 @@
+<%! from django.utils.translation import ugettext as _ %>
+<%inherit file="../main.html" />
+
+<%namespace name='static' file='../static_content.html'/>
+
+<%block name="pagetitle">${_("Courses")}</%block>
+<%! from microsite_configuration import microsite %>
+
+<section class="find-courses">
+
+<%
+  course_index_overlay_text = microsite.get_value('course_index_overlay_text', _("Explore free courses from leading universities."))
+
+  # not sure why this is, but if I use static.url('images/edx_bw.png') then the HTML rendering
+  # of this template goes wonky
+
+  logo_file = microsite.get_value(
+    'course_index_overlay_logo_file', settings.STATIC_URL + 'images/edx_bw.png')
+%>
+
+<style type="text/css">
+#search-form{
+    align: center;
+}
+#search-form input[type=text]{
+    width: 370px;
+    color: #a0a0a0;
+    font-style:normal;
+}
+</style>
+<script type="text/javascript">
+$(window).load(function() {
+    if(getParameterByName('next')) {
+        $('#login').trigger("click");
+    }
+})
+
+$(function(){
+    bindAll();
+    $.each([ "subject"], function(idx, i){checkClickedObj(i);});
+    INITCOURSESTR = '<li class="courses-listing-item"><article id="course_id" class="course"><a href=""><div class="inner-wrapper"><header class="course-preview"><hgroup><h2><span class="course-number"></span></h2></hgroup><div class="info-link">&#x2794;</div></header><section class="info"><div class="cover-image"><img src="#" alt="Cover Image" /></div><div class="desc"><p></p></div><div class="bottom"><span class="university">Org</span></div></section></div><div class="meta-info"><p class="university">Org</p></div></a></article></li>';
+    INITSTR = computeRefreshStr();
+
+
+    /* fall */
+    window.conUrl = window.location.href.split("?")[0];
+    console.log(window.conUrl);
+
+
+//    function _reachBottom() {
+//        var scrollTop = 0, clientHeight = 0, scrollHeight = 0;
+//        if (document.documentElement && document.documentElement.scrollTop) { scrollTop = document.documentElement.scrollTop;
+//        }else if (document.body){ scrollTop = document.body.scrollTop; }
+//        if (document.body.clientHeight && document.documentElement.clientHeight) { clientHeight = (document.body.clientHeight < document.documentElement.clientHeight) ? document.body.clientHeight: document.documentElement.clientHeight;
+//        }else{ clientHeight = (document.body.clientHeight > document.documentElement.clientHeight) ? document.body.clientHeight: document.documentElement.clientHeight; }
+//        scrollHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+//        return (scrollTop + clientHeight + 10 >= scrollHeight);
+//    };
+//    function doScoll(){
+//        console.log("doScoll");
+//        if(_reachBottom()){
+//            window.onscroll = null;
+//            console.log("_reachBottom");
+//            // window.bh += 100;
+//            //document.getElementsByTagName('body')[0].style.height = window.bh + 'px';
+//            var courseId = $('.courses .courses-listing .courses-listing-item').last().find('article').eq(0).attr('id');
+//            ajaxGetConCourse(window.conUrl, courseId);
+//            setTimeout(function(){
+//                window.onscroll = function(){doScoll();}
+//            }, 1000);
+//        }
+//    }
+//    window.onscroll = function(){doScoll();}
+
+
+
+});
+function computeRefreshStr(){
+    var strCon = []
+    var subjectStr = $("li#subjectsearbar>div>span").html();
+    if (subjectStr != "") strCon.push(subjectStr);
+    return strCon.join(", ")
+}
+
+function bindAll(){
+    var subject = $('ul#subject').children();
+    $.each(subject, function(idx2, i2){
+        $(i2).click(function(){
+            allSet(subject, idx2, i2);
+        });
+    });
+}
+
+
+function allSet(col, idx, item){
+    var class_name = $(item).attr('class');
+    if (parseInt(idx) == 0) {
+        if (class_name == "live") {
+            $.each(col, function(dx, it){
+                $(it).attr('class', 'death');
+            });
+        } else {
+            $.each(col, function(dx, it){
+                $(it).attr('class', 'live');
+            });
+        }
+    } else {
+        if (class_name == "live") {
+            $(col[0]).attr("class", "death")
+            $(item).attr('class', 'death');
+        } else {
+            $(item).attr('class', 'live');
+        }
+    }
+
+    checkClickedObj($(item).parent().attr("id"));
+    refreshConditionPage();
+}
+
+
+function checkClickedObj(ulClass){
+    var childLen = $('ul#' + ulClass).children().length
+    var clObj = $('ul#'+ ulClass + ">li.live")
+    if (clObj.length == (childLen - 1)) {
+        $($('ul#' + ulClass).children()[0]).attr("class", "live");
+        clObj = $('ul#'+ ulClass + ">li.live");
+    }
+
+    var barid = "#" + ulClass + "searbar";
+
+    if (clObj.length == 0) {
+        $($(barid + ">div").children('span')).html("");
+        $(barid).hide()
+    } else if ($('ul#'+ ulClass + ">li.live").length == childLen) {
+        $($(barid + ">div").children('span')[0]).html('全部');
+        $(barid).show();
+    } else {
+        var strArr = []
+        $.each(clObj, function(idx, i){strArr.push($($(i).children('span')[0]).html())});
+        $($(barid + ">div").children('span')).html(strArr.join(', '));
+        $(barid).show();
+    }
+
+    return false;
+}
+
+function refreshConditionPage(){
+    var baseHref = window.location.href.split("?")[0];
+    var conStrArr = [];
+    var nameArr = [];
+
+
+    // subject condition
+    var allSubjLen = $('ul#subject').children().length;
+    var selSubj = $('ul#subject>li.live');
+    if (selSubj.length > 0) {
+        nameArr = [];
+        if (allSubjLen != selSubj.length){
+            $.each(selSubj, function(idx, i){nameArr.push($(i).attr("name"))});
+            conStrArr.push("subject=" + nameArr);
+        }
+        else {
+            conStrArr.push("subject=all");
+        }
+    }
+
+    var curStr = computeRefreshStr();
+    if (conStrArr.length > 0 && INITSTR != curStr) {
+        var requestCon = conStrArr.join("&");
+        window.conUrl = baseHref + "?" + requestCon;console.log(window.conUrl);
+        $('ul.courses-listing').eq(0).empty();
+        ajaxGetConCourse(window.conUrl);
+    }
+
+}
+
+// TODO finish ajax load courses
+function ajaxGetConCourse(conUrl, courseId){
+    var courseUnit = $(INITCOURSESTR);
+    var insertCourseHtml = '';
+    if (conUrl.indexOf('?') > -1) {
+        conUrl = conUrl + "&course_id=" + courseId;
+    } else {
+        conUrl = conUrl + "?course_id=" + courseId;
+    }
+    $.ajax({
+        url: conUrl,
+        type: 'GET',
+        async:true,
+        dataType: 'json',
+        success: function(json){
+            var coursesObjs = json.courses;
+            // write courses html
+
+            if(json.courses.length<1){
+                //window.onscroll=null;
+                console.log("case1");
+                //addHtml()
+            }else if(json==null){
+                //window.onscroll=null;
+                console.log("case2");
+            }else{
+                addHtml();
+                console.log("case3");
+
+            }
+
+
+            function addHtml(){
+                console.log("addHtml"+coursesObjs);
+                $.each(coursesObjs, function(idx, c){
+                    var articleObj = courseUnit.find('article.course');
+
+                    articleObj.attr('id', c.id);
+                    articleObj.children('a').attr('href', c.course_about_url);
+
+                    if (c.is_new) {
+                        //console.log(c.is_new);
+                        articleObj.children('a').before($('<span class="status">新</span>'))
+                    }
+
+                    var hgroupHtml = '<span class="course-number">' + c.course_number + '</span>' + c.title;
+                    if (articleObj.find('hgroup>h2')) {
+                        //console.log(articleObj.find('hgroup>h2'));
+                        articleObj.find('hgroup>h2').html(hgroupHtml);
+                    }
+
+                    var imgAltStr = c.course_number + ' ' + c.title + " Cover Image";
+                    if (articleObj.find('div.cover-image>img')) {
+                        //console.log(articleObj.find('div.cover-image>img'));
+                        articleObj.find('div.cover-image>img').attr('src', c.img_src);
+                        articleObj.find('div.cover-image>img').attr('alt', imgAltStr);
+                    }
+
+                    if (articleObj.find("div.desc>p")) {
+                        //console.log(articleObj.find("div.desc>p"));
+                        articleObj.find("div.desc>p").html(c.short_description);
+                    }
+
+                    if (articleObj.find("div.bottom>span")) {
+                        //console.log(articleObj.find("div.bottom>span"));
+                        articleObj.find("div.bottom>span").html(c.university);
+                    }
+
+                    if (articleObj.find("div.meta-info>p")) {
+                        //console.log(articleObj.find("div.meta-info>p"));
+                        articleObj.find("div.meta-info>p").html(c.university);
+                    }
+
+                    insertCourseHtml += courseUnit[0].outerHTML;
+                    courseUnit = $(INITCOURSESTR);
+                });
+
+                // clear course list replace with insertCourseHtml
+                $('ul.courses-listing').eq(0).append(insertCourseHtml);
+            }
+
+        }
+    });
+}
+
+
+</script>
+
+
+<script type="text/javascript">
+$("#search-form").submit(function(){
+    $("#search-query").val($.trim($("#search-query").val()))
+})
+</script>
+
+<script type="text/javascript">
+$("#search-form").submit(function(){
+    $("#search-query").val($.trim($("#search-query").val()))
+})
+function chkform(obj){
+    var search_value = $('#search-query').val()
+    if (search_value == "" || search_value == "请输入关键字..." ){
+//        $("#remind").html("<p><strong>搜索内容不能为空！</strong></p>"
+//        );
+        return false;
+    }
+
+    return true;
+}
+</script>
+
+  <!--<header class="search">-->
+  <header class="">
+    <!--<div class="inner-wrapper main-search">-->
+    <!--</div>-->
+    <!--hfy6 begin-->
+  <section class="filter_courses">
+    <div class="course-content">
+      <div class="content-body">
+        <div class="selection-panel">
+          <div class="filter fl">
+            <div class="filter-title fl"><span>学科分类</span></div>
+            <div class="filter-ul fl">
+              <ul id="searbar">
+                      <li id="subjectsearbar" class="tab1" style="display: none;"><div><strong>科目：</strong><span></span></div></li>
+              </ul>
+            </div>
+          </div>
+          <div class="select-menu">
+            <div class="select-subject">
+              <div class="subject">
+                <div class="subject-left">科目：</div>
+                <div class="subject-right">
+                  <ul id="subject">
+                      <li class="tab1" name="all"><span>全部</span></li>
+                       % for item in settings.COURSE_CLASS_LIST:
+	 <li class="tab1" name="${item[0]}"><span>${item[1]}</span></li>
+ % endfor
+  <!--
+                      <li class="tab1" name="LCHYX"><span>临床医学</span></li>
+                      <li class="tab1" name="JCHYX"><span>基础医学</span></li>
+                      <li class="tab1" name="ZHYZHY"><span>中医中药</span></li>
+                      <li class="tab1" name="KQYX"><span>口腔医学</span></li>
+                      <li class="tab1" name="YX"><span>药学</span></li>
+                      <li class="tab1" name="HL"><span>护理</span></li>
+                      <li class="tab1" name="GGWSHYFYX"><span>公共卫生与预防医学</span></li>
+                      <li class="tab1" name="YXYJ"><span>医学检验</span></li>
+                      <li class="tab1" name="信息安全基础理论"><span>信息安全基础理论</span></li>
+                      <li class="tab1" name="通用安全技术"><span>通用安全技术</span></li>
+                      <li class="tab1" name="安全管理"><span>安全管理</span></li>
+                      <li class="tab1" name="专项安全技术"><span>专项安全技术</span></li>
+                      -->
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!--hfy6 end-->
+  </header>
+  <section class="container">
+    <section class="search_box" style="z-index:150;">
+       <nav>
+        <form name="queryform" class="search-container search" id="search-form" action="/courses" method="get" onsubmit="return chkform(this)">
+          <!--<input type="text" id="search-query" name="query"  onfocus="if (value =='请输入关键字...'){value =''}" onblur="if (value ==''){value='请输入关键字...'}" value="">-->
+          <table>
+              <tr>
+                  <td><div id="remind"></div></td>
+                  <td><input type="text" id="search-query" name="query"  class="search" placeholder="请输入关键字..." onfocus="placeholder =''" onblur="placeholder='请输入关键字...'" value=""></td>
+                  <td><input type="submit" class="search_button" value="搜索"></td>
+              </tr>
+          </table>
+        </form>
+       </nav>
+    </section>
+
+    <section class="courses">
+      % if len(courses):
+      <ul class="courses-listing">
+        %for course in courses:
+        <li class="courses-listing-item">
+          <%include file="../course.html" args="course=course" />
+        </li>
+        %endfor
+      </ul>
+    % else:
+        <ul class="courses-listing">
+        无匹配课程
+    % endif
+    </section>
+
+  </section>
+</section>
+
+<style type="text/css">
+    .filter_courses{padding-top:40px;}
+    /*.course-content {max-width: 1180px; width: 100%; margin: 40px auto; padding: 0px;}
+.course-content .content-body {width: 100%; margin: auto;}
+.course-content .content-body ul li{ list-style: none;}
+.content-content table {border: 1px solid #dddddd;}
+.content-content table tr {height: 40px; border: 1px solid #dddddd;}
+.content-content table tr td.title {width: 20%;}*/
+/*hfy6 begin*/
+.course-content { margin: 0 auto; padding:0; max-width: 1180px; width:100%; }
+/*hfy6 end*/
+.course-content .content-body { margin:auto; width:100%; font: 13px/1.6 Microsoft YaHei,SimSun,tahoma,arial,sans-serif;}
+.course-content .content-body ul li{ list-style: none;}
+/*hfy6 begin*/
+.course-content .selection-panel{ width:100%; height: 120px; position: relative; left:0; top:0; }
+/*hfy6 end*/
+.course-content .filter{ height:auto; width:100%; position:absolute; background:#f7f7f7; left:0;top:0; line-height:40px; border: 1px solid #dddddd; height:40px;}
+.course-content .filter-title{ height: 40px; width: 150px; position: absolute; background: #f7f7f7; left: 0; top: 0; }
+/*hfy6 begin*/
+.course-content .filter-title span{ font-weight:bold; color:#000;padding-left:10px;}
+/*hfy6 end*/
+.course-content .filter-ul{ height:auto; width:80%; position: absolute; background: #f7f7f7; left: 150px; top: 0; }
+.course-content #searbar{ }
+.course-content #searbar li{ float: left; margin: -13px 0 0 10px; }
+.course-content #searbar li div{ height: 20px; padding: 0; margin: 10px; border: 1px solid #dddddd; }
+.course-content #searbar li div:hover{ height: 23px; padding: 0; margin: 10px; border: 1px solid #dddddd; background-color: #CCC; }
+.course-content #searbar li div span{ line-height:20px; text-align:center; float:left; }
+.course-content #searbar li div strong{ line-height:20px; text-align:center; float:left; }
+.course-content #searbar li{ display: none; }
+/*hfy6 begin*/
+.course-content .select-menu{ height:60px; width:100%; position:absolute; background:#ffffff; left:0;top: 40px; border-bottom: 1px solid #dddddd;border-right: 1px solid #dddddd; border-left: 1px solid #dddddd;}
+/*hfy6 end*/
+.course-content .select-base{ height:40px; width:100%; position:absolute; left:0; top:0;}
+.course-content .base{ height:40px; width:960px;padding-left:40px; position:absolute; left:0; top:0;}
+.course-content .base li{ float:left;}
+.course-content .base-left{ float:left; height:40px; line-height:40px; font-weight:bold;}
+.course-content .base-right ul{ float:left;}
+.course-content .base-right li{float:left; height:40px; line-height:40px; margin-top: -13px;}
+.course-content .base .tab{ width:40px;height:40px; line-height:40px; font-weight:bold;}
+.course-content .base li{height:40px; line-height:40px; color:#666; cursor:pointer;}
+.course-content .base li span{padding:0 10px; height:40px; line-height:40px; color:#666; cursor:pointer; display:block;}
+.course-content .base-right li span:hover{background:#ff7a31; padding:0 10px; height:40px; color:#fff;}
+.course-content .base-right .live span{background:#ff7a31; padding: 10px 10px 0; height:30px; color:#fff;width:auto;}
+.course-content .base-more{ width:70px; height:40px; line-height:40px;}
+/*hfy6 begin*/
+.course-content .select-subject{position:absolute; height:60px; width:100%; background:#fff;}
+.course-content .subject {height:40px; width:960px; padding-left:40px; position:absolute; left:0;top:0;}
+.course-content .subject-left {float:left; height:40px; line-height:40px; font-weight:bold; color:#fff;}
+/*hfy6 end*/
+.course-content .subject-right ul {float:left;}
+/*hfy6 begin*/
+.course-content .subject-right li { float:left; height:40px; line-height:40px; color:#666; cursor:pointer;}
+.course-content .subject-right li span {padding:0 10px; height:30px; display:block; padding-top: 10px;}
+.course-content .subject-right li span:hover{background:#2883bc; padding: 10px 10px 0px; height:30px; color:#fff;}
+.course-content .subject-right .live li span {background:#2883bc; padding: 10px 10px 0; height:30px; color:#fff; width:auto;}
+/*hfy6 end*/
+
+.course-content .live span{background:#2883bc; height:20px; color:#fff;}
+
+.search_box{width:100%; height:52px;box-shadow:0 1px 0 0 rgba(255,255,255,1),inset 0 0 5px 0 rgba(221,221,221,1); border:1px solid #ddd; position:relative;}
+.search_icon{position:absolute; width:26px; height:21px; top:15px; left:15px; background:url(search_03.gif)left top no-repeat;}
+.search_button{position:absolute; right:2px; height:48px; top:2px;}
+.filter_courses{padding-top:40px;}
+input[type="text"]{ border-radius:0!important; position:absolute; width:600px; color:#ddd; height:52px; left:60px; top:0; border:none; background:none; box-shadow:none;}
+input[type="text"]:focus{border-color:none;box-shadow:none;outline:none}textarea{height:60px}
+
+</style>

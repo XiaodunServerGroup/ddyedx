@@ -1,0 +1,134 @@
+<%! from django.utils.translation import ugettext as _ %>
+<%!
+  from django.core.urlresolvers import reverse
+  from courseware.courses import course_image_url, get_course_about_section
+  from courseware.access import has_access
+  from django.conf import settings
+  from edxmako.shortcuts import marketing_link
+%>
+
+<%namespace name='static' file='/static_content.html'/>
+<%! from microsite_configuration import microsite %>
+
+<%inherit file="wechat_main.html" />
+
+<%block name="js_extra">
+<script type="text/javascript">
+  (function() {
+    $(".register").click(function(event) {
+      $("#class_enroll_form").submit();
+      event.preventDefault();
+    });
+
+    ## making the conditional around this entire JS block for sanity
+    %if settings.FEATURES.get('RESTRICT_ENROLL_BY_REG_METHOD') and course.enrollment_domain:
+      <%
+        perms_error = _('The currently logged-in user account does not have permission to enroll in this course. '
+                        'You may need to {start_logout_tag}log out{end_tag} then try the register button again. '
+                        'Please visit the {start_help_tag}help page{end_tag} for a possible solution.').format(
+                          start_help_tag="<a href='{url}'>".format(url=marketing_link('FAQ')), end_tag='</a>',
+                          start_logout_tag="<a href='{url}'>".format(url=reverse('logout'))
+                          )
+      %>
+    $('#class_enroll_form').on('ajax:complete', function(event, xhr) {
+      if(xhr.status == 200) {
+        location.href = "${reverse('dashboard')}";
+      } else if (xhr.status == 403) {
+        location.href = "${reverse('course-specific-register', args=[course.id])}?course_id=${course.id}&enrollment_action=enroll";
+      } else if (xhr.status == 400) { //This means the user did not have permission
+        $('#register_error').html("${perms_error}").css("display", "block");
+      } else {
+        $('#register_error').html(
+            (xhr.responseText ? xhr.responseText : "${_("An error occurred. Please try again later.")}")
+        ).css("display", "block");
+      }
+    });
+
+    %else:
+
+    $('#class_enroll_form').on('ajax:complete', function(event, xhr) {
+      if(xhr.status == 200) {
+        if (xhr.responseText == "") {
+          location.href = "${reverse('dashboard')}";
+        }
+        else {
+          location.href = xhr.responseText;
+        }
+      } else if (xhr.status == 403) {
+        location.href = "${reverse('register_user')}?course_id=${course.id}&enrollment_action=enroll";
+      } else {
+        $('#register_error').html(
+            (xhr.responseText ? xhr.responseText : 'An error occurred. Please try again later.')
+        ).css("display", "block");
+      }
+    });
+    %endif
+  })(this)
+  </script>
+  <script src="${static.url('js/course_info.js')}"></script>
+  <style type="text/css">
+      a{text-decoration:none}
+  </style>
+</%block>
+<div>
+	<div data-role="header" data-theme="a">
+		<div class="class_title">课程详情</div>
+	</div>
+
+	<div class="class_m20">
+		<div class="ui-body ui-body-a ui-corner-all">
+			<div class="img-board">
+          % if get_course_about_section(course, "video"):
+              <img src="${course_image_url(course)}" alt="" />
+          %else:
+              <img src="${course_image_url(course)}" alt=""/>
+          % endif
+      </div>
+		<div>
+		<h3>${course.display_number_with_default | h} ${get_course_about_section(course, "title")}</h3>
+		<h4>机构：${get_course_about_section(course, "university")}<span>课程代码：${course.display_number_with_default | h}</span></h4>
+	</div>
+</div>
+
+<div class="main-cta">
+    %if user.is_authenticated() and registered:
+      %if show_courseware_link:
+        <div class="class_m20" align="center">
+          <a href="${course_target}" target="_self">
+            <input type="submit" name="submit" value='${_("You are registered for this course")} ${_("View Courseware")}'>
+          </a>
+        </div>
+      %endif
+    % elif is_course_full:
+      <span class="register disabled">
+        ${_("Course is full")}
+      </span>
+    %else:
+      <div class="class_m20" align="center">
+        <div class="ui-btn ui-input-btn ui-corner-all ui-shadow">
+          <a class="login" href="${reverse("mobi_login")}?course_id=${course.id}">登录继续访问课程的详细内容</a>
+        </div>
+      </div>
+    %endif
+</div>
+
+<div class="class_m20">
+		<div class="ui-body ui-body-a ui-corner-all">
+			<h3>简介</h3>
+			<p>${get_course_about_section(course, "overview")}</p>
+		</div>
+</div>
+
+%if not registered:
+  <div style="display: none;">
+      <form id="class_enroll_form" method="post" data-remote="true" action="${reverse('mobile_change_enrollment')}">
+          <fieldset class="enroll_fieldset">
+              <input name="course_id" type="hidden" value="${course.id}">
+              <input name="enrollment_action" type="hidden" value="enroll">
+          </fieldset>
+          <div class="submit">
+              <input name="submit" type="submit" value="enroll">
+          </div>
+      </form>
+  </div>
+%endif

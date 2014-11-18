@@ -1,0 +1,16 @@
+<div class="transcripts-message-status status-error"><i class="icon-remove"></i><%= gettext("无时间记录") %></div>
+<p class="transcripts-message">
+<%= gettext("在中国医学教育慕课联盟中没有发现该视频的在线记录，但我们发现此视频在YouTube上有在线记录。你打算将其导入到中国医学教育慕课联盟吗？") %>
+</p>
+<div class="transcripts-file-uploader"></div>
+<p class="transcripts-error-message is-invisible">
+<%= gettext("错误.") %>
+</p>
+<div class="wrapper-transcripts-buttons">
+    <button class="action setting-upload" type="button" name="setting-upload" value="<%= gettext("上传新的在线视频") %>" data-tooltip="<%= gettext("上传新的在线视频") %>">
+        <%= gettext("上传新的在线视频") %>
+    </button>
+    <a class="action setting-download is-disabled" href="javascropt: void(0);" data-tooltip="<%= gettext("下载编辑") %>">
+        <%= gettext("下载编辑") %>
+    </a>
+</div>

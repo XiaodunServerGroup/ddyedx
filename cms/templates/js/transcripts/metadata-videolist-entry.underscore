@@ -1,0 +1,23 @@
+<div class="wrapper-comp-setting metadata-videolist-enum">
+  <label class="label setting-label" for="<%= uniqueId %>"><%= model.get('display_name')%></label>
+  <div class="wrapper-videolist-settings">
+    <div class="wrapper-videolist-url videolist-settings-item"><input type="text" id="<%= uniqueId %>"  class="input videolist-url" value="<%= model.get('value')[0] %>"></div>
+    <div class="tip videolist-url-tip setting-help"><%= model.get('help') %></div>
+    <div class="wrapper-videolist-urls">
+      <a href="#" class="collapse-action collapse-setting">
+        <i class="icon-plus"></i><%= gettext("添加更多的视频资源") %> <span class="sr"><%= model.get('display_name')%></span>
+      </a>
+      <div class="videolist-extra-videos">
+        <span class="tip videolist-extra-videos-tip setting-help"><%= gettext('确保学生都能观看视频, 建议提供相同的视频替代版本: mp4, webm 和 youtube (如果有).') %></span>
+        <ol class="videolist-settings">
+            <li class="videolist-settings-item">
+              <input type="text" class="input" value="<%= model.get('value')[1] %>">
+            </li>
+            <li class="videolist-settings-item">
+              <input type="text" class="input" value="<%= model.get('value')[2] %>">
+            </li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>

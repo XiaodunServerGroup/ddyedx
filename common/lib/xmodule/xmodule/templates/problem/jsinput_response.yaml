@@ -1,0 +1,41 @@
+---
+metadata:
+    display_name: 自定义JavaScript显示和分级
+    markdown: !!null
+data: |
+      <problem display_name="webGLDemo">
+      <script type="loncapa/python">
+      import json
+      def vglcfn(e, ans):
+        '''
+        par is a dictionary containing two keys, "answer" and "state"
+        The value of answer is the JSON string returned by getGrade
+        The value of state is the JSON string returned by getState
+        '''
+        par = json.loads(ans)
+        # We can use either the value of the answer key to grade
+        answer = json.loads(par["answer"])
+        return answer["cylinder"] and not answer["cube"]
+        '''
+        # Or we could use the value of the state key
+        state = json.loads(par["state"])
+        selectedObjects = state["selectedObjects"]
+        return selectedObjects["cylinder"] and not selectedObjects["cube"]
+        '''
+      </script>
+      <p>
+      下面的形状，可以选择（黄色）或未被选择（青色）。通过这两种状态点击它们会反复循环。
+      </p>
+      <p>
+      如果锥被选中（而不是立方体），一个正确的答案会按“检查”后生成的。点击任一“检查”或“保存”将注册的当前状态。
+      </p>
+      <customresponse cfn="vglcfn">
+        <jsinput gradefn="WebGLDemo.getGrade"
+          get_statefn="WebGLDemo.getState"
+          set_statefn="WebGLDemo.setState"
+          width="400"
+          height="400"
+          html_file="https://studio.edx.org/c4x/edX/DemoX/asset/webGLDemo.html"
+          sop="false"/>
+      </customresponse>
+      </problem>

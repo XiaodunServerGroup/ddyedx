@@ -1,0 +1,392 @@
+// studio - elements - global header
+// ====================
+
+.wrapper-header {
+  @extend %ui-depth3;
+  position: relative;
+  width: 100%;
+  height: 100px;
+  box-shadow: 0 1px 2px 0 $shadow-l1;
+  margin: 0;
+  padding: 0 $baseline;
+  background: #f9f9f9;
+  border-bottom: 3px solid $theme-color;  
+
+  header.primary {
+    @include box-sizing(border-box);
+    @include clearfix();
+    max-width: $fg-max-width;
+    min-width: $fg-min-width;
+    width: flex-grid(12);
+    margin: 0 auto;
+  }
+
+  // ====================
+
+  // basic layout
+  .wrapper-l, .wrapper-r {
+    //background: $white;
+  }
+
+  .wrapper-l {
+    float: left;
+    width: flex-grid(7,12);
+  }
+
+  .wrapper-r {
+    float: right;
+    width: flex-grid(4,12);
+    text-align: right;
+  }
+
+  .branding, .info-course, .nav-course, .nav-account, .nav-pitch {
+    @include box-sizing(border-box);
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .nav-account {
+    width: 100%;
+  }
+
+  // basic layout - nav items
+  nav {
+
+    > ol > .nav-item {
+      @extend %t-action3;
+      display: inline-block;
+      vertical-align: middle;
+      font-weight: 600;
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
+
+    .nav-item a {
+      color: $gray-d1;
+
+      &:hover {
+        color: $blue-s1;
+      }
+    }
+  }
+
+  // basic layout - dropdowns
+  .nav-dd {
+
+    .title {
+      @extend %t-action2;
+      @extend %ui-btn-dd-nav-primary;
+      @include transition(all $tmg-f2 ease-in-out 0s);
+
+      .label, .icon-caret-down {
+
+      }
+
+      .label {
+
+      }
+
+      .icon-caret-down {
+        opacity: 0.25;
+      }
+
+      &:hover {
+
+        .icon-caret-down {
+          opacity: 1.0;
+        }
+      }
+
+      .nav-sub .nav-item {
+
+        [class^="icon-"] {
+          display: inline-block;
+          vertical-align: middle;
+          margin-right: ($baseline/4);
+        }
+      }
+    }
+  }
+
+  // ====================
+
+  // specific elements - branding
+  .branding {
+    //padding: ($baseline*0.75) 0;
+    padding: 23px 0;
+
+    a {
+      display: block;
+
+      img {
+        //height: 70px;
+        //width: 413px;
+        display: block;
+        //margin-left:-10px;
+      }
+    }
+  }
+
+  // ====================
+
+  // specific elements - course name/info
+  .info-course {
+    margin-right: flex-gutter();
+    border-right: 1px solid $gray-l4;
+    padding: ($baseline*0.75) flex-gutter() ($baseline*0.75) 0;
+
+    .course-org, .course-number {
+      @extend %t-action4;
+      display: inline-block;
+      vertical-align: middle;
+      max-width: 45%;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      opacity: 0.75;
+    }
+
+    .course-org {
+      margin-right: ($baseline/4);
+    }
+
+    .course-title {
+      @extend %t-action2;
+      display: block;
+      width: 100%;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-weight: 600;
+    }
+
+    // entire link
+    .course-link {
+      @include transition(color $tmg-f2 ease-in-out 0s);
+      display: block;
+      color: $gray-d1;
+
+      &:hover {
+        color: $blue-s1;
+      }
+    }
+  }
+
+  // ====================
+
+  // specific elements - course nav
+  .nav-course {
+    padding: ($baseline*0.75) 0;
+  }
+
+  // ====================
+
+  // specific elements - account-based nav
+  .nav-account {
+    position: relative;
+    padding: ($baseline*0.75) 0;
+
+    .nav-sub {
+      text-align: left;
+    }
+
+    .nav-account-help {
+
+      .title {
+           @include blue-button;
+         }
+
+    }
+
+    .nav-account-user {
+      margin-top: 13px;
+
+      .title {
+        @include blue-button;
+
+        > .label {
+          display: inline-block;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
+      }
+    }
+  }
+
+  // ====================
+
+  // specific elements - pitch/how it works nav
+  .nav-pitch {
+    position: relative;
+    padding: ($baseline*0.75) 0;
+
+    .nav-sub {
+      text-align: left;
+    }
+  }
+}
+
+// ====================
+
+// CASE: user signed in
+.is-signedin {
+
+  .wrapper-l {
+    width: flex-grid(9,12);
+  }
+
+  .wrapper-r {
+    width: flex-grid(3,12);
+  }
+
+  .branding {
+    width: 20%;
+    margin-right: 2%;
+  }
+
+  .nav-account {
+    top: ($baseline/4);
+  }
+}
+
+// ====================
+
+// CASE: in course {
+.is-signedin.course {
+
+  .wrapper-header {
+
+    .wrapper-l {
+      width: flex-grid(9,12);
+    }
+
+    .wrapper-r {
+      width: flex-grid(3,12);
+    }
+
+    .branding {
+      width: 20%;
+      margin-right: 2%;
+    }
+
+    .info-course {
+      width: 25%;
+      margin-right: 2%;
+    }
+
+    .nav-course {
+      width: 45%;
+    }
+  }
+}
+
+// ====================
+
+// CASE: user not signed in
+.not-signedin {
+
+  .wrapper-header {
+
+    .wrapper-l {
+      width: 30%;
+    }
+
+    .wrapper-r {
+      width: 70%;
+    }
+
+    .branding {
+      width: 100%;
+    }
+
+    .nav-pitch {
+      top: 0;
+
+      .nav-item {
+        margin-right: 0;
+
+        &:last-child {
+          margin-right: 0;
+        }
+      }
+
+      .action-signup {
+        @include blue-button;
+        @include font-size(14);
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      .action-signin {
+        @include blue-button;
+        @include font-size(14);
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+    }
+  }
+}
+
+// ====================
+
+// STATE: active/current nav states
+
+.nav-item.is-current,
+body.howitworks .nav-not-signedin-hiw,
+
+// dashboard
+body.dashboard .nav-account-dashboard,
+
+// course content
+body.course.outline .nav-course-courseware .title,
+body.course.updates .nav-course-courseware .title,
+body.course.pages .nav-course-courseware .title,
+body.course.uploads .nav-course-courseware .title,
+body.course.students_statistic .nav-course-courseware .title,
+
+body.course.outline .nav-course-courseware-outline,
+body.course.updates .nav-course-courseware-updates,
+body.course.pages .nav-course-courseware-pages,
+body.course.uploads .nav-course-courseware-uploads,
+body.course.students_statistic .nav-course-courseware-studentinfo,
+body.course.textbooks .nav-course-courseware-textbooks,
+
+// course settings
+body.course.schedule .nav-course-settings .title,
+body.course.grading .nav-course-settings .title,
+body.course.team .nav-course-settings .title,
+body.course.advanced .nav-course-settings .title,
+
+body.course.schedule .nav-course-settings-schedule,
+body.course.grading .nav-course-settings-grading,
+body.course.team .nav-course-settings-team,
+body.course.advanced .nav-course-settings-advanced,
+
+// course tools
+body.course.import .nav-course-tools .title,
+body.course.export .nav-course-tools .title,
+body.course.checklists .nav-course-tools .title,
+
+body.course.import .nav-course-tools-import,
+body.course.export .nav-course-tools-export,
+body.course.checklists .nav-course-tools-checklists,
+
+{
+  color: $blue;
+
+  a {
+    color: $blue;
+    pointer-events: none;
+  }
+}
+
+.header-navigation {background: url('../img/topnav_bg.png') left bottom repeat-x; width:100%; height:41px; z-index:99; line-height:35px; font-size:15px; letter-spacing:2px; margin-top: -2px;}
+.header-navigation .header-wall {margin:auto; width:1003px; text-align:right;}
+.header-navigation .header-wall a:link, .header-navigation .header-wall a:visited {color:#ffffff; text-decoration:none; font:Microsoft YaHei,SimSun,tahoma,arial,sans-serif;}
+.header-navigation .header-wall a:hover, .header-navigation .header-wall a:active {color:#faeeb7; text-decoration:underline;}
+.header-navigation .header-wall a.line {background: url('../img/topnav_line.png') right center no-repeat; padding:0 35px; height:37px;}
+.header-navigation .header-wall a.none {padding:0 0 0 35px;}
+

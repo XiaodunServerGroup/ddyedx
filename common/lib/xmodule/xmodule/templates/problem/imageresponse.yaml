@@ -1,0 +1,22 @@
+---
+metadata:
+    display_name: 图像映射输入
+    markdown: !!null
+data: |
+  <problem>
+    <p>
+      图像映射输入的问题，呈现给学生一个图像.
+      通过鼠标点击图像上的特定位置.
+      输入的正确性可以基于一个矩形的预期尺寸进行评估.
+    </p>
+    <p>下面显示的动物那个是小猫？</p>
+    <imageresponse>
+      <imageinput src="https://studio.edx.org/c4x/edX/DemoX/asset/Dog-and-Cat.jpg" width="640" height="400" rectangle="(385,98)-(600,337)"/>
+    </imageresponse>
+    <solution>
+      <div class="detailed-solution">
+        <p>答案</p>
+        <p>右边的动物是一只小猫。在左侧的动物是小狗，不是小猫.</p>
+      </div>
+    </solution>
+  </problem>

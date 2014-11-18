@@ -1,0 +1,814 @@
+<%! from django.utils.translation import ugettext as _ %>
+
+<%inherit file="base.html" />
+
+<%block name="title">${_("My Courses")}</%block>
+<%block name="bodyclass">is-signedin index view-dashboard</%block>
+
+<%block name="jsextra">
+<script type="text/javascript" xmlns="http://www.w3.org/1999/html">
+course_class_html = "" +
+	 % for item in settings.COURSE_CLASS_LIST:
+	     "<option value='${item[0]}'>${item[1]}</option>" +
+	 % endfor
+	 "";
+require(["domReady!", "jquery", "jquery.form", "js/index"], function(doc, $) {
+    // showing/hiding creation rights UI
+    $('.show-creationrights').click(function(e){
+        (e).preventDefault();
+        $(this).closest('.wrapper-creationrights').toggleClass('is-shown').find('.ui-toggle-control').toggleClass('current');
+    });
+
+    var reloadPage = function () {
+        location.reload();
+    };
+
+    var showError = function ()  {
+        $('#request-coursecreator-submit').toggleClass('has-error').find('.label').text('Sorry, there was error with your request');
+        $('#request-coursecreator-submit').find('.icon-cog').toggleClass('icon-spin');
+    };
+
+    $('#request-coursecreator').ajaxForm({error: showError, success: reloadPage});
+
+    $('#request-coursecreator-submit').click(function(e){
+      $(this).toggleClass('is-disabled is-submitting').find('.label').text('Submitting Your Request');
+    });
+    /*
+    domReady(function(){
+      $("a#copy-content-id").zclip({
+        path: "static//js/swf-plugin/ZeroClipboard.swf",
+        copy: function(){
+          console.log($(this).attr('href'));
+          return $(this).text();
+        }
+      });
+    });
+    */
+
+    $('a#show-wenjuan-list-modal').click(function(){
+        var self = $(this);
+
+        $('.modal-cover').show();
+        $(self.attr('href')).show();
+    });
+
+    $('.modal-cover').click(function(){
+      $(this).hide();
+      $('.modal').hide();
+    });
+
+    $('.close-modal').click(function(){
+      $('.modal-cover').hide();
+      $(this).parent().parent(".modal").hide();
+    });
+
+    $('a#copy-content-id').click(function(){
+        var self = $(this);
+        var nextTr = self.parent().parent().next();
+        if (nextTr.length <= 0) {
+          return false;
+        }
+
+        if (nextTr.attr('class').indexOf('wenjuan-link-part') != -1) {
+          if (nextTr.css('display') == 'table-row') {
+            self.html("查看URL");
+            nextTr.fadeOut(); 
+          }
+
+          if (nextTr.css('display') == 'none') {
+            self.html("隐藏URL");
+            nextTr.fadeIn();
+          }
+        }
+    });
+
+    $('.remove-button').click(function(){
+        if(confirm('确定要删除吗?')){
+            $.ajax({
+                url: "/remove_institute_teacher?id=" + $(this).attr("value"),
+                type: "GET",
+                dataType: "jsonp",
+                jsonp: false,
+                'cache': true,
+                success: function(){
+
+                }
+            })
+            alert('移除成功!')
+        }else{
+            return false;
+        }
+    });
+
+    $('.close-modal').click(function(){
+        $('#lean_overlay').css('display','none');
+    })
+
+    $('#submit_button').click(function(){
+        var file=$("input[name='file']").val();
+        var filename=file.replace(/.*(\/|\\)/, "");
+        var fileExt=(/[.]/.exec(filename)) ? /[^.]+$/.exec(filename.toLowerCase()) : '';
+        if(fileExt != 'xls'){
+            alert('上传失败!上传文件为excel格式');
+            //$('#content').innerHTML="上传失败!上传文件为excel格式";
+            return false;
+        }else{
+            alert('上传成功!')
+        }
+    })
+
+    accessible_modal(".edit-name", "#apply_name_change .close-modal", "#apply_name_change", "#index-main");
+    accessible_modal(".edit-name", "#apply_name_change_file .close-modal", "#apply_name_change_file", "#index-main");
+});
+</script>
+
+</%block>
+
+<%block name="content">
+<div class="wrapper-mast wrapper">
+  <header class="mast has-actions">
+    <h1 class="page-header">${_("My Courses")}</h1>
+
+    % if user.is_active:
+    <nav class="nav-actions">
+      <h3 class="sr">${_("Page Actions")}</h3>
+      <ul>
+        <li class="nav-item">
+          % if course_creator_status=='granted':
+          <a href="#" class="button new-button new-course-button"><i class="icon-plus icon-inline"></i>
+              ${_("New Course")}</a>
+          % elif course_creator_status=='disallowed_for_this_site' and settings.FEATURES.get('STUDIO_REQUEST_EMAIL',''):
+          <a href="mailto:${settings.FEATURES.get('STUDIO_REQUEST_EMAIL','')}">${_("Email staff to create course")}</a>
+          % endif
+        </li>
+      </ul>
+    </nav>
+    % endif
+  </header>
+</div>
+
+<div class="wrapper-content wrapper" id="index-main">
+  % if user.is_active:
+  <section class="content">
+    <article class="content-primary" role="main">
+
+      <div class="introduction">
+        <!--
+        <h2 class="title">${_("Welcome, {0}!").format(user.username)}</h2>
+        -->
+
+        %if len(courses) > 0:
+        <!--
+        <div class="copy">
+          <p>这里是所有您当前已经使用的课程：</p>
+        </div>
+        -->
+        
+        %else:
+        <div class="copy">
+          <p>${_("You currently aren't associated with any Studio Courses.")}</p>
+        </div>
+        %endif
+      </div>
+
+      % if course_creator_status=='granted':
+      <div class="wrapper-create-element wrapper-create-course">
+        <form class="create-course course-info" id="create-course-form" name="create-course-form">
+          <div class="wrap-error">
+            <div id="course_creation_error" name="course_creation_error" class="message message-status message-status error" role="alert">
+            <p>${_("Please correct the highlighted fields below.")}</p>
+            </div>
+          </div>
+
+          <div id='business_system_host' data-host="${settings.XIAODUN_BACK_HOST}" style='display: none'></div>
+          
+          <div class="wrapper-form">
+            <h3 class="title">${_("Create a New Course")}</h3>
+
+            <fieldset>
+              <legend class="sr">${_("Required Information to Create a New Course")}</legend>
+
+              <ol class="list-input">
+                <li class="field text required" id="field-course-name">
+                  <label for="new-course-name">${_("Course Name")}</label>
+                  <input class="new-course-name" id="new-course-name" type="text" name="new-course-name" aria-required="true" placeholder="${_('e.g. Introduction to Computer Science')}" />
+                  <span class="tip">${_("The public display name for your course.")}</span>
+                  <span class="tip tip-er ror is-hiding"></span>
+                </li>
+                <li class="field text required" id="field-course-category">
+                  <label for="new-course-category">课程分类</label>
+                  <select class="new-course-category" id="new-course-category" name='new-course-category' aria-required='false'>
+                  </select>
+                  <span class="tip tip-error is-hiding"></span>
+                  <!--
+                  <label for="new-course-category">课程分类</label>
+                  <select class="new-course-category" id="new-course-category" name="new-course-category" aria-required="false" placeholder="课程分类">
+                      <option value="T">技术</option>
+                      <option value="M">管理</option>
+                  </select>
+                  -->
+                </li>
+                <li class="field text required" id="field-course-level" style="display: none">
+                    <!--
+                    <label for="new-course-level">课程等级</label>
+                    <select class="new-course-level" id="new-course-level" name="new-course-level" aria-required="false">
+                      <option value="J">初级</option>
+                      <option value="M">中级</option>
+                      <option value="S">高级</option>
+                    </select>
+                    -->
+                    <script src="${settings.XIAODUN_BACK_HOST}/dictionaryRs.jsp?divid=field-course-level&code=course_level&selectname=new-course-level"></script>
+                </li>
+                  <!--
+                <li class="field text required" id="field-course-price">
+                  <label for="new-course-price">课程价格</label>                  
+                  <input class="new-course-price" id="new-course-price" type="text" name="new-course-price" aria-required="false" placeholder="课程价格" />
+                  <span class='tip'>请填写课程价格，不填默认为0</span>
+                </li>
+                -->
+                <li class="field text required" id="field-organization">
+                  <label for="new-course-org">${_("Organization")}</label>
+                  <input class="new-course-org" id="new-course-org" type="text" name="new-course-org" aria-required="true" value="${course_org}" placeholder="${_('e.g. UniversityX or OrganizationX')}" />
+                  <span class="tip">${_("The name of the organization sponsoring the course.")}  <strong>${_("Note: This is part of your course URL, so no spaces or special characters are allowed.")}</strong> ${_("This cannot be changed, but you can set a different display name in Advanced Settings later.")},请勿使用.点号和中文.</span>
+                  <span class="tip tip-error is-hiding"></span>
+                </li>
+                <li class="field text required" id="field-course-number">
+                  <label for="new-course-number">${_("Course Number")}</label>
+                  <input class="new-course-number" id="new-course-number" type="text" name="new-course-number" aria-required="true" placeholder="${_('e.g. CS101')}" />
+                  <span class="tip">${_("The unique number that identifies your course within your organization.")} <strong>${_("Note: This is part of your course URL, so no spaces or special characters are allowed and it cannot be changed.")},请勿使用.点号和中文.</strong></span>
+                  <span class="tip tip-error is-hiding"></span>
+                </li>
+
+                <li class="field text required" id="field-course-run">
+                  <label for="new-course-run">${_("Course Run")}</label>
+                  <input class="new-course-run" id="new-course-run" type="text" name="new-course-run" aria-required="true"placeholder="${_('e.g. 2014_T1')}" />
+                  <span class="tip">${_("The term in which your course will run.")} <strong>${_("Note: This is part of your course URL, so no spaces or special characters are allowed and it cannot be changed.")},请勿使用.点号和中文.</strong></span>
+                  <span class="tip tip-error is-hiding"></span>
+                </li>
+              </ol>
+
+            </fieldset>
+          </div>
+
+          <div class="actions">
+            <input type="submit" value="${_('Create')}" class="action action-primary new-course-save" />
+            <input type="button" value="${_('Cancel')}" class="action action-secondary action-cancel new-course-cancel" />
+          </div>
+        </form>
+      </div>
+      % endif
+
+      %if len(courses) > 0:
+      <div class="courses">
+        <ul class="list-courses">
+          %for course, url, lms_link, org, num, run in sorted(courses, key=lambda s: s[0].lower() if s[0] is not None else ''):
+          <li class="course-item">
+            <a class="course-link" href="${url}">
+              <h3 class="course-title">${course}</h3>
+
+              <div class="course-metadata">
+                <span class="course-org metadata-item">
+                  <span class="label">${_("Organization:")}</span> <span class="value">${org}</span>
+                </span>
+                <span class="course-num metadata-item">
+                  <span class="label">${_("Course Number:")}</span>
+                  <span class="value">${num}</span>
+                </span>
+                <span class="course-run metadata-item">
+                  <span class="label">${_("Course Run:")}</span> <span class="value">${run}</span>
+                </span>
+              </div>
+            </a>
+
+            <ul  class="item-actions course-actions">
+              <li class="action">
+                <a href="${lms_link}" rel="external" class="button view-button view-live-button">${_("View Live")}</a>
+              </li>
+            </ul>
+          </li>
+          %endfor
+        </ul>
+      </div>
+
+      %else:
+      <div class="courses">
+      </div>
+
+      <div class="notice notice-incontext notice-instruction notice-instruction-nocourses list-notices">
+        <div class="notice-item">
+          <div class="msg">
+            <h3 class="title">${_("Are you staff on an existing Studio course?")}</h3>
+            <div class="copy">
+              <p>${_('You will need to be added to the course in Studio by the course creator. Please get in touch with the course creator or administrator for the specific course you are helping to author.')}</p>
+            </div>
+          </div>
+        </div>
+
+        %if course_creator_status == "granted":
+        <div class="notice-item has-actions">
+          <div class="msg">
+            <h3 class="title">${_('Create Your First Course')}</h3>
+            <div class="copy">
+              <p>${_('Your new course is just a click away!')}</p>
+            </div>
+          </div>
+
+          <ul class="list-actions">
+            <li class="action-item">
+              <a href="#" class="action-primary action-create action-create-course new-course-button"><i class="icon-plus icon-inline"></i> ${_('Create Your First Course')}</a>
+            </li>
+          </ul>
+        </div>
+        % endif
+
+      </div>
+      % endif
+
+
+      %if course_creator_status == "unrequested":
+      <div class="wrapper wrapper-creationrights">
+        <h3 class="title">
+          <a href="#instruction-creationrights" class="ui-toggle-control show-creationrights"><span class="label">${_('Becoming a Course Creator in Studio')}</span> <i class="icon-remove-sign"></i></a>
+        </h3>
+
+        <div class="notice notice-incontext notice-instruction notice-instruction-creationrights ui-toggle-target" id="instruction-creationrights">
+          <div class="copy">
+            <p>${_('edX Studio is a hosted solution for our xConsortium partners and selected guests. Courses for which you are a team member appear above for you to edit, while course creator privileges are granted by edX. Our team will evaluate your request and provide you feedback within 24 hours during the work week.')}</p>
+          </div>
+
+          <div class="status status-creationrights is-unrequested">
+            <h4 class="title">${_('Your Course Creator Request Status:')}</h4>
+
+            <form id="request-coursecreator" action="${request_course_creator_url}" method="post" enctype="multipart/form-data">
+              <div class="form-actions">
+                <button type="submit" id="request-coursecreator-submit" name="request-coursecreator-submit" class="action-primary action-request"><i class="icon-cog icon-inline icon-spin"></i> <span class="label">${_('Request the Ability to Create Courses')}</span></button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      %elif course_creator_status == "denied":
+      <div class="wrapper wrapper-creationrights is-shown">
+        <h3 class="title">
+          <a href="#instruction-creationrights" class="ui-toggle-control current show-creationrights"><span class="label">${_('Your Course Creator Request Status')}</span> <i class="icon-remove-sign"></i></a>
+        </h3>
+
+        <div class="notice notice-incontext notice-instruction notice-instruction-creationrights ui-toggle-target" id="instruction-creationrights">
+          <div class="copy">
+            <p>${_('edX Studio is a hosted solution for our xConsortium partners and selected guests. Courses for which you are a team member appear above for you to edit, while course creator privileges are granted by edX. Our team is has completed evaluating your request.')}
+            </p>
+          </div>
+
+          <div class="status status-creationrights has-status is-denied">
+            <h4 class="title">${_('Your Course Creator Request Status:')}</h4>
+
+            <dl class="status-update">
+              <dt class="label">${_('Your Course Creator request is:')}</dt>
+              <dd class="value">
+                <span class="status-indicator"></span>
+                <span class="value-formal">${_('Denied')}</span>
+                <span class="value-description">${_('Your request did not meet the criteria/guidelines specified by edX Staff.')}</span>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+
+      %elif course_creator_status == "pending":
+      <div class="wrapper wrapper-creationrights is-shown">
+        <h3 class="title">
+          <a href="#instruction-creationrights" class="ui-toggle-control current show-creationrights"><span class="label">${_('Your Course Creator Request Status')}</span> <i class="icon-remove-sign"></i></a>
+        </h3>
+
+        <div class="notice notice-incontext notice-instruction notice-instruction-creationrights ui-toggle-target" id="instruction-creationrights">
+          <div class="copy">
+            <p>${_('edX Studio is a hosted solution for our xConsortium partners and selected guests. Courses for which you are a team member appear above for you to edit, while course creator privileges are granted by edX. Our team is currently  evaluating your request.')}</p>
+          </div>
+
+          <div class="status status-creationrights has-status is-pending">
+            <h4 class="title">${_('Your Course Creator Request Status:')}</h4>
+
+            <dl class="status-update">
+              <dt class="label">${_('Your Course Creator request is:')}</dt>
+              <dd class="value">
+                <span class="status-indicator"></span>
+                <span class="value-formal">${_('Pending')}</span>
+                <span class="value-description">${_('Your request is currently being reviewed by edX staff and should be updated shortly.')}</span>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      % endif
+    </article>
+
+    <aside class="content-supplementary" role="complimentary">
+      <div class="bit">
+        <h3 class="title title-3">${_('Need help?')}</h3>
+        <p>如果您对中国医学教育慕课联盟不了解，同时开始使用时遇到困难，那么这些东西可能对您有所帮助。</p>
+
+        <ol class="list-actions">
+          <!--li class="action-item">
+            <a href="http://mooc.xiaodun.cn/faq.html" title="xiaodunbangzhu">常见问题</a>
+          </li-->
+          <!--li class="action-item">
+            <a href="http://help.edge.edx.org/discussion/new" class="show-tender" title="Use our feedback tool, Tender, to request help">${_('Request help with Studio')}</a>
+          </li-->
+        </ol>
+      </div>
+
+      <!--<div class="bit">-->
+        <!--<h3 class="title title-3">同步课堂</h3>-->
+        <!--<p>同步课堂简介</p>-->
+
+        <!--<ol class="list-actions">-->
+          <!--<li class="action-item">-->
+            <!--<a href="/sync/class/appointment" title="同步课堂" target="_blank">同步课堂</a>-->
+          <!--</li>-->
+        <!--</ol>-->
+      <!--</div>-->
+
+      <!--<div class="bit">-->
+        <!--<h3 class="title title-3">课程问卷调查</h3>-->
+        <!--<p>课程问卷调查介绍</p>-->
+
+        <!--<ol class="list-actions">-->
+          <!--<li class="action-item">-->
+            <!--<a href="${ wenjuan_link }" title="创建问卷" target="_blank">创建问卷</a>-->
+            <!--<br/>-->
+            <!--<a href="#wenjuan-list-modal" title="已有问卷列表" id="show-wenjuan-list-modal">已有问卷列表</a>-->
+          <!--</li>-->
+        <!--</ol>-->
+      <!--</div>-->
+
+      % if profile.profile_role=='in':
+      <div class="bit">
+        <h3 class="title title-3">单位管理</h3>
+        <p>由帐户为单位帐户,在以下可进行本单位相关管理.</p>
+
+        <ol class="list-actions">
+          <li class="action-item">
+            <!--<a href="/institution_upload_teacher?id=${ profile.user_id }" title="批量导入教师" target="_blank">批量导入教师</a>-->
+            <a href="#apply_name_change_file" rel="leanModal" title="批量导入教师" class="edit-name">批量导入教师</a>
+            <br/>
+            <!--<a href="#add-teachers-modal"  rel="leanModal"  id="show-add-teachers-modal" title="添加审核教师">添加审核教师</a>-->
+            <!--<br/>-->
+            <a href="#apply_name_change" rel="leanModal" title="导入" class="edit-name">管理本单位教师</a>
+          </li>
+        </ol>
+      </div>
+        % endif
+
+      % if course_creator_status=='disallowed_for_this_site' and settings.FEATURES.get('STUDIO_REQUEST_EMAIL',''):
+      <div class="bit">
+        <h3 class="title title-3">${_('Can I create courses in Studio?')}</h3>
+        <p>${_('In order to create courses in Studio, you must')} <a href="mailto:${settings.FEATURES.get('STUDIO_REQUEST_EMAIL','')}">${_("contact edX staff to help you create a course")}</a></p>
+      </div>
+      % endif
+
+      % if course_creator_status == "unrequested":
+      <div class="bit">
+        <h3 class="title title-3">${_('Can I create courses in Studio?')}</h3>
+        <p>${_('In order to create courses in Studio, you must have course creator privileges to create your own course.')}</p>
+      </div>
+
+      % elif course_creator_status == "denied":
+      <div class="bit">
+        <h3 class="title title-3">${_('Can I create courses in Studio?')}</h3>
+        <!--<p>${_('Your request to author courses in studio has been denied. Please')} <a href="http://help.edge.edx.org/discussion/new" class="show-tender">${_('contact edX Staff with further questions')}</a></p>-->
+      </div>
+
+      % endif
+    </aside>
+  </section>
+  % else:
+  <section class="content">
+    <article class="content-primary" role="main">
+      <div class="introduction">
+        <h2 class="title">${_("Thanks for signing up, %(name)s!") % dict(name= user.username)}</h2>
+      </div>
+
+      <div class="notice notice-incontext notice-instruction notice-instruction-verification">
+        <div class="msg">
+          <h3 class="title">${_('We need to verify your email address')}</h3>
+          <div class="copy">
+            <p>${_('Almost there! In order to complete your sign up we need you to verify your email address (%(email)s). An activation message and next steps should be waiting for you there.') % dict(email=user.email)}</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <aside class="content-supplementary" role="complimentary">
+      <div class="bit">
+        <h3 class="title title-3">${_('Need help?')}</h3>
+        <p>${_('Please check your Junk or Spam folders in case our email isn\'t in your INBOX. Still can\'t find the verification email? Request help via the link below.')}</p>
+
+        <ol class='list-actions'>
+          <li class="action-item">
+            <!--<a href="http://help.edge.edx.org/discussion/new" class="show-tender" title="Use our feedback tool, Tender, to request help">Request help with your Studio account</a>-->
+          </li>
+        </ol>
+      </div>
+    </aside>
+  </section>
+  %endif
+</div>
+
+<style>
+  section#wenjuan-list-modal {
+    display: none;
+    border: 1px solid rgba(0,0,0,0.9);
+    box-shadow: 0 15px 80px 15px rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.6);
+    padding: 8px;
+    height: auto;
+    width: auto;
+    min-width: 38%;
+  }
+
+  div.inner-wrapper {
+    background: #f5f5f5;
+    border-radius: 0px;
+    border: 1px solid rgba(0,0,0,0.9);
+    box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.7);
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+  }
+
+  div.inner-wrapper .close-modal {
+    border-radius: 2px;
+    cursor: pointer;
+    display: inline-block;
+    vertical-align: baseline;
+    zoom: 1;
+    padding: 10px;
+    position: absolute;
+    right: 2px;
+    top: 0px;
+    z-index: 3;
+    color: #646464;
+    font: normal 1.4rem/1.4rem "Microsoft YaHei","Open Sans",Verdana,Geneva,sans-serif,sans-serif;
+    text-align: center;
+    text-shadow: 0 1px rgba(255,255,255,0.8);
+    -webkit-transition: all 0.15s ease-out 0s;
+    -moz-transition: all 0.15s ease-out 0s;
+    transition: all 0.15s ease-out 0s;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    text-shadow: none !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+  }
+
+  div.inner-wrapper>header {
+    overflow: hidden;
+    padding: 28px 20px 0px;
+    position: relative;
+    z-index: 2;
+  }
+
+  div.inner-wrapper>header>h2{
+    position: relative;
+    text-align: center;
+    text-shadow: 0 1px rgba(255,255,255,0.4);
+    z-index: 2;
+
+    color: #646464;
+    font: normal 1.4em/1.4em "Microsoft YaHei",Georgia,Cambria,"Times New Roman",Times,serif;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  div.inner-wrapper>div#wenjuan-list {
+    width: 100%;
+    margin: 0px 0px 30px;
+    padding: 0px;
+  }
+
+  div.inner-wrapper>div#wenjuan-list>table {
+    width: 90%;
+    max-width: 90%;
+    background-color: transparent;
+    border-spacing: 0;
+    border-collapse: collapse;
+    box-sizing: border-box;
+    border-color: gray;
+    margin: 0px 30px;
+  }
+
+  div.inner-wrapper>div#wenjuan-list>table thead {
+    display: table-header-group;
+    vertical-align: middle;
+    border-color: inherit;    
+  }
+
+  div.inner-wrapper>div#wenjuan-list>table thead:before, :after {
+    box-sizing: border-box;
+  }
+
+  div.inner-wrapper>div#wenjuan-list>table tr {
+    display: table-row;
+    vertical-align: inherit;
+    border-color: inherit;
+  }
+
+  div.inner-wrapper>div#wenjuan-list>table tr td {
+    padding: 8px;
+    line-height: 1.42857143;
+    vertical-align: top;
+    border-top: 1px solid #ddd;
+  }
+
+  div.inner-wrapper>div#wenjuan-list>table tr.wenjuan-link-part {
+    display: none;
+    background-color: #EEE;
+  }
+
+  div.inner-wrapper>div#wenjuan-list>table tr.lshown {
+    display: table-row;
+  }
+
+  div.inner-wrapper>div#wenjuan-list>table tr th:last-child {
+    text-align: center;
+  }
+
+  div.inner-wrapper>div#wenjuan-list>table tr td:last-child a{
+    padding: 0px 10px;
+  }
+
+  div.inner-wrapper>div#wenjuan-list>table thead tr th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #ddd;
+    padding: 8px;
+    line-height: 1.42857143;
+    text-align: left;
+    font-weight: bold;
+  }
+
+  div.inner-wrapper>div#wenjuan-list>table tbody {
+    display: table-row-group;
+    vertical-align: middle;
+    border-color: inherit;
+  }
+
+  .table-hover tbody tr:hover td {
+    background-color: #EEE;
+  }
+
+  /*institute css*/
+
+/*layer1*/
+.change_name_body{margin-left: 40px;}
+.change-name-title{  padding-bottom:22px; border-bottom:1px solid #0e74b4;  text-align:center; position:relative;}
+.change-name-title strong{ font-weight:normal;  font-size:24px; line-height:24px;}
+.table1{ line-height:24px; font-size:14px;}
+.table1 th{ font-weight:normal;}
+.table1 td{ text-align:center; width: 300px;}
+.table1 td a{ color:#85acce;}
+/*layer2*/
+.up_text{ width:250px; margin:0 auto; margin-top:40px; height:420px;}
+.up_text p{ color:#0e74b4; font-size:14px; line-height:28px;}
+.upload_text{ line-height:28px; margin-top:6px; font-size:14px;}
+.upload_text b , .upload_text strong{ float:left; font-weight:normal; }
+.btn01{ width:250px; margin:0 auto; margin-top:67px;  line-height:30px;}
+.submit1{ float:left; display:inline-block; background-color:#0e74b4;  line-height:28px; color:#fff; cursor:pointer; margin-left:24px; border:1px solid #0e74b4; width:75px;}
+.reset1{ float:left; width:75px;  display:inline-block; background-color:#fff;  line-height:28px; color:#626262; cursor:pointer; border:1px solid #0e74b4;margin-left:44px;}
+
+</style>
+<section id="wenjuan-list-modal" class="modal wenjuan-data" aria-hidden="true">
+  <div class="inner-wrapper" role='alertdialog' aria-labelledy="wenjuan-modal-title">
+    <button class="close-modal">&#10005;
+      <span class="sr">
+        ## Translators: this is a control to allow users to exit out of this modal interface (a menu or piece of UI that takes the full focus of the screen)
+        ${_('Close Modal')}
+      </span>
+    </button>
+
+    <header>
+      <h2>
+        <span id="wenjuan-modal-title">当前问卷列表</span>
+        <span class="sr">,
+          ## Translators: this text gives status on if the modal interface (a menu or piece of UI that takes the full focus of the screen) is open or not
+          ${_("modal open")}
+        </span>
+        <hr />
+      </h2>
+    </header>
+
+    <div id="wenjuan-list">
+      % if len(qlist):
+        <table class="table-hover">
+          <thead>
+            <th>问卷名</th>
+            <th>问卷状态</th>
+            <th>答卷人数</th>
+            <th>创建时间</th>
+            <th>操作</th>
+          </thead>
+
+          % for wj in qlist:
+            <tr>
+              <td><a href="${ wj[4] }" target="_blank" title="${ wj[0] }">${ wj[0] if len(wj[0]) <= 9 else (wj[0][0:8] + "...") }</a></td>
+              <td>${ wj[1] }</td>
+              <td>${ wj[2] }</td>
+              <td>${ wj[3] }</td>
+              <td>
+                <a href="#" id="copy-content-id" data="${wj[4]}">查看URL</a>
+                <a href="${wj[5]}" target="_blank">结果地址</a>
+              </td>
+            </tr>
+
+            <tr class="wenjuan-link-part">
+              <td colspan='5'>${ wj[4] }</td>
+            </tr>
+          % endfor
+        </table>
+      % else:
+        <div style="padding: 0 30px">
+          <span>目前你还没有制作过问卷，<a href="${wenjuan_link}" target="_blank">点击此处</a>来制作</span>            
+        </div>
+      % endif
+    <div>
+  </div>
+</section>
+
+<section id="apply_name_change" class="modal" aria-hidden="true">
+  <div class="inner-wrapper" role="dialog" aria-labelledby="change-name-title">
+    <button class="close-modal">&#10005;
+      <span class="sr">
+        ## Translators: this is a control to allow users to exit out of this modal interface (a menu or piece of UI that takes the full focus of the screen)
+        ${_('Close Modal')}
+      </span>
+    </button>
+
+    <header>
+      <div class="change-name-title">
+        <strong>
+        本单位教师管理
+        </strong>
+      </div>
+    </header>
+    <div class="change_name_body">
+            <fieldset style="height:460px; overflow:auto;">
+            <table width="800" class="table1">
+        % if len(user_institute_teacher_list):
+                <tr>
+                    <td>用户名</td>
+                    <td>姓名</td>
+                    <td>邮箱</td>
+                    <td>操作</td>
+                </tr>
+            %for s in range(0, len(user_institute_teacher_list)):
+                <tr>
+                    <td>${user_institute_teacher_list[s]['username']}</td>
+                    <td>${user_institute_teacher_list[s]['name']}</td>
+                    <td>${user_institute_teacher_list[s]['email']}</td>
+                    <td><a href="" class="remove-button" value="${ user_institute_teacher_list[s]['id'] }">移除</a></td>
+                </tr>
+            %endfor
+        % else:
+            本单位暂无教师
+        %endif
+        </table>
+        </fieldset>
+    </div>
+  </div>
+    </div>
+</section>
+
+<section id="apply_name_change_file" class="modal" aria-hidden="true">
+  <div class="inner-wrapper" role="dialog" aria-labelledby="change-name-title">
+    <button class="close-modal">&#10005;
+      <span class="sr">
+        ## Translators: this is a control to allow users to exit out of this modal interface (a menu or piece of UI that takes the full focus of the screen)
+        ${_('Close Modal')}
+      </span>
+    </button>
+
+    <header>
+      <div class="change-name-title">
+        <strong>
+        批量导入教师
+        </strong>
+      </div>
+    </header>
+    <div class="up_text">
+    <p>配置文件上传</p>
+    <form action="/institution_upload_teacher?id=${ profile.user_id }" method="post" enctype="multipart/form-data" accept-charset="utf-8">
+        <div style='display:none'><input type='hidden' name='csrfmiddlewaretoken' value='{% csrf_token %}' /></div>
+
+        <div class="upload_text"><p><label for="id_file">请上传文件:</label> <input type="file" name="file" id="id_file" /></p></div>
+        <div class="btn01">
+        <button id="submit_button" class="submit1">提交</button>
+        <button id="return_course" name="return_course" class="reset1">返回</button>
+        </div>
+    </form>
+    </div>
+  </div>
+</section>
+</%block>
