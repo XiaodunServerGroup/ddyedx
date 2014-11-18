@@ -46,9 +46,9 @@ site_status_msg = get_site_status_msg(course_id)
 
   <h1 class="logo">
     <!--<a href="${marketing_link('ROOT')}">-->
-    <a href="http://mooc.diandiyun.com/">
+    <a href="/">
       <%block name="navigation_logo">
-          <img src="${static.url(branding.get_logo_url())}" alt="
+          <img src="/static/images/logo.png" alt="
           % if course:
           ${course.display_org_with_default | h}: ${course.display_number_with_default | h} ${course.display_name_with_default | h} @
           % endif
