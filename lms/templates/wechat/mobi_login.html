@@ -92,7 +92,7 @@
 
 <div>
   <div class="ui-header ui-bar-a" role="banner" data-role="header" data-theme="a">
-    <div class="class_title">登录中国医学教育慕课联盟账户</div>
+    <div class="class_title">登录点滴慕课账户</div>
   </div>
 </div>
 
@@ -103,6 +103,7 @@
 
   <section class="content">
     <form role="form" id="login-form" method="post" data-remote="true" action="login_ajax" novalidate>
+    <input type="hidden" name="csrfmiddlewaretoken" value="${ csrf_token }" id="prompt_box">
       <p class="message submission-error">
         <span class="message-copy"></span>
       </p>
