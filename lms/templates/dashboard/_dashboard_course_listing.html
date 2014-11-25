@@ -20,7 +20,7 @@
 <%namespace name='static' file='../static_content.html'/>
 
 <li class="course-item">
-  <article class="course ${enrollment.mode}">
+  <article class="course ${enrollment.mode}" style="z-index:0">
     <%
       if waffle.flag_is_active(request, 'merge_course_tabs'):
           course_target = reverse('courseware', args=[course.id])
