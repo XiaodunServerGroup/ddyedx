@@ -395,18 +395,14 @@ if not os.path.exists(load_thesaurus_path):
 THESAURUS_PATH = load_thesaurus_path
 
 COURSE_CLASS_LIST = [
-                        ('JD', u'机电'),
-                        ('SK', u'数控'),
-                        ('MJ', u'模具'),
-                        ('DZDG', u'电子电工'),
                         ('XXAQ', u'信息安全'),
+                        ('DZSW', u'电子商务'),
+                        ('QCXG', u'汽车相关'),
+                        ('RJKF', u'软件开发'),
+                        ('YYPX', u'语言培训'),
+                        ('SHXQ', u'生活兴趣'),
+                        ('CSHR', u'厨师烹饪'),
+                        ('JDSK', u'机电数控'),
+                        ('DZDG', u'电子电工'),
                         ('GYMS', u'工艺美术'),
-                        ('QX', u'汽修'),
-                        ('SWSJ', u'商务会计'),
-                        ('MRMF', u'美容美发'),
-                        ('SY', u'摄影'),
-                        ('CS', u'厨师'),
-                        ('FZ', u'服装'),
-                        ('QCWX', u'汽车维修'),
-                        ('JS', u'驾驶'),
                      ]
