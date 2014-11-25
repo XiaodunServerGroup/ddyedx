@@ -222,16 +222,10 @@ def return_fixed_courses(request, courses, action=None):
 
     course_id = request.GET.get("course_id")
     if course_id:
-        course_id = course_id.replace(".", '/',2)
+        course_id = course_id.replace(".", '/')
 
     try:
-        # index_course = get_course_by_id(course_id)
-        index_course = 0
-        for i in courses:
-            if i.id != None:
-                if i.id == course_id:
-                    index_course = i
-                    break
+        index_course = get_course_by_id(course_id)
         course_index = (courses.index(index_course) + 1)
     except:
         course_index = 0
@@ -371,12 +365,6 @@ def mobi_course_info(request, course, action=None):
     except:
         user = AnonymousUser()
 
-    cp = 0
-    if not hasattr(course,"display_course_price_with_default"):
-        cp = 0
-    else:
-        cp = course.display_course_price_with_default
-
     result = {
         "id": course.id.replace('/', '.'),
         "name": course.display_name_with_default,
@@ -389,7 +377,7 @@ def mobi_course_info(request, course, action=None):
         "registered": registered_for_course(course, user),
         "about": get_course_about_section(course, 'short_description'),
         "category": course.category,
-        "course_price": cp
+        "course_price": course.display_course_price_with_default
     }
 
     def compute_action_imgurl(imgname):
@@ -1054,11 +1042,6 @@ def course_about(request, course_id):
             'shortbio': UserProfile.objects.get(user_id=User.objects.get(username=user).id).shortbio
         })
 
-    course_mini_info = course.id.split('/')
-    school_logo_location = StaticContent.compute_location(course_mini_info[0], course_mini_info[1],'school_logo.jpg')
-
-    school_logo_location_href = StaticContent.get_url_path_from_location(school_logo_location)
-
     return render_to_response('courseware/course_about.html',
                               {'course': course,
                                'registered': registered,
@@ -1071,8 +1054,7 @@ def course_about(request, course_id):
                                'is_course_full': is_course_full,
                                'course_duration': course_duration,
                                'course_end': course_end,
-                               'course_dur': course_dur,
-                               'school_logo': school_logo_location_href})
+                               'course_dur': course_dur})
 
 
 @ensure_csrf_cookie
