@@ -775,8 +775,11 @@ def mobi_directory(request, course_id):
     motoc = mobi_toc_for_course(user, request, course)
     show_list = list()
     for toc in motoc:
-        videolist = toc['show_url'][0]
-        show_list.append(videolist)
+    	if len(toc['show_url']) > 0:
+            videolist = toc['show_url'][0]
+            show_list.append(videolist)
+        else:
+            show_list.append('')
     if not registered:
         # TODO (vshnayder): do course instructors need to be registered to see course?
         log.debug(u'User %s tried to view course %s but is not enrolled', user, course.location.url())
@@ -1240,7 +1243,7 @@ def mobi_register(request, extra_context=None):
 
     return render_to_response('wechat/mobi_register.html', context)
 
-
+@ensure_csrf_cookie
 def mobi_login_ajax(request, error=""):
     "mobile ajax login request"
     if 'email' not in request.POST or 'password' not in request.POST:
